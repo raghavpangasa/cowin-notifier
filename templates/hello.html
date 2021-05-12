@@ -1,0 +1,77 @@
+<title>CoWIN Notifier</title>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<div class="container">
+<h2>Cowin Notifier Form</h2>
+<form action="" method="post" role="form">
+<div class="form-group">
+<label for="name">Name:</label>
+<input type="text" class="form-control" id="name" name="name" placeholder="What's your name?">
+
+</br>
+</br>
+
+<label for="alert_types">Alert Types:</label>
+</br>
+
+<input type="checkbox" id="smsAlert" name="smsAlert" value="Alert">
+<label for="smsAlert"> SMS Alert</label><br>
+
+<input type="checkbox" id="emailAlert" name="emailAlert" value="Email">
+<label for="emailAlert"> Email Alert</label><br>
+
+<input type="checkbox" id="soundAlert" name="soundAlert" value="Sound Alert">
+<label for="soundAlert"> Sound Alert</label><br>
+
+</br>
+
+
+<label for="fee_types">Fee Types: </label>
+</br>
+
+<input type="checkbox" id="paid" name="paid" value="paid">
+<label for="paid"> Paid </label>
+
+<input type="checkbox" id="free" name="free" value="free">
+<label for="free"> Free </label><br>
+
+</br>
+
+<label for="vaccine_types">Vaccine Options: </label>
+</br>
+
+<input type="checkbox" id="covaxin" name="covaxin" value="covaxin">
+<label for="covaxin"> Covaxin </label>
+
+<input type="checkbox" id="covishield" name="covishield" value="covishield">
+<label for="covishield"> Covishield </label><br>
+
+</br>
+
+<label for="pincode">Pin Code:</label>
+<input type="text" class="form-control" id="pincode" name="pincode" placeholder="Enter your pincode.">
+
+<label for="email">Email:</label>
+<input type="text" class="form-control" id="email" name="email" placeholder="Your email will be used to contact you.">
+
+<label for="phone">Phone Number:</label>
+<input type="phone2numeric" class="form-control" id="phone" name="phone" placeholder="Enter a phone number.">
+<p>Please contact Raghav if you want to receive SMS Alerts</p>
+
+
+</br>
+</br>
+
+</div>
+<button type="submit" class="btn btn-success">Submit</button>
+</form>
+
+</br>
+</br>
+<p>{{result}}<p>
+
+</div>
+
+
+
