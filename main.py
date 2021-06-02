@@ -17,7 +17,7 @@ fD = FilterData()
 sD = SendEmail()
 ss = SendSMS()
 audio = Audio()
-audio.play()
+# audio.play()
 
 def getAppointMent(pincode, date):
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2172.95 Safari/537.36'}
@@ -45,47 +45,55 @@ def getPossibility(pincode, date, vaccine, fees):
 
 
 
-def startSearch(response, phone,emailid,pincode, date, vaccine, fees, sms=True,email=True,alert=True):
+def startSearch(response, phone,emailid,pincodes, date, vaccine, fees, sms=True,email=True,alert=True,dose1=True, dose2=True, age18=True, age45=True):
     # pincode = "110049"
     # date = "06-05-2021"
     while True:
         print("Searching for your slot!!")
-        data = getAppointMent(pincode, date)
-        if data:
-            for cent in data["centers"]:
-            # import pdb; pdb.set_trace()
-                if fD.paidFilter(cent, fees):
-                    # sD.sendEmail(cent,emailid)
-                    mila = False
-                    for ses in cent["sessions"]:
-                        # mess = "Centre Name: " + str(cent["name"]) + ",\nAddress: " + str(cent["address"]) + ",\nVaccine: " + str(ses["vaccine"])
-                        # if cent["fee_type"] == "Paid":
-                        #     mess = mess + ",\nFees: " + str(cent["vaccine_fees"])
-                        # else:
-                        #     mess = mess + ",\nFees: Free" 
-                        # sD.sendEmail(mess,emailid)
-                        # ss.send_message(mess,phone)
-                        if fD.vaccineFilter(ses,vaccine) and fD.ifAvailable(ses):
-                            print("Slot mil gaya! @" + cent["name"])
-                            mess = "Centre Name: " + str(cent["name"]) + ",\nAddress: " + str(cent["address"]) + ",\nVaccine: " + str(ses["vaccine"])
-                            if cent["fee_type"] == "Paid":
-                                mess = mess + ",\nFees: " + str(cent["vaccine_fees"])
-                            else:
-                                mess = mess + ",\nFees: Free" 
-                            mila = True
+        for pincode in pincodes:
+            pincode = pincode.replace(" ","")
+            data = getAppointMent(pincode, date)
+            if data:
+                for cent in data["centers"]:
+                # import pdb; pdb.set_trace()
+                    if fD.paidFilter(cent, fees):
+                        # sD.sendEmail(cent,emailid)
+                        mila = False
+                        final_message = []
+                        for ses in cent["sessions"]:
+                            if fD.vaccineFilter(ses,vaccine) and fD.ifAvailable(ses, dose1,dose2) and fD.ageFilter(ses, age18,age45):
+                                print("Slot mil gaya! @" + cent["name"])
+                                # time.sleep(10)
+                                mess = "\nCentre Name: " + str(cent["name"]) + ",\nAddress: " + str(cent["address"]) + ",\nDate: " + str(ses["date"]) + ",\nVaccine: " + str(ses["vaccine"])
+                                if cent["fee_type"] == "Paid":
+                                    mess = mess + ",\nFees: " + str(cent["vaccine_fees"])
+                                else:
+                                    mess = mess + ",\nFees: Free" 
+                                if dose1 and not dose2:
+                                    mess = mess + ",\nDose: Dose 1"
+                                if dose2 and not dose1:
+                                    mess = mess + ",\nDose: Dose 2"
+                                if age18 and not age45:
+                                    mess = mess + ",\nAge Limit: 18-45"
+                                if age45 and not age18:
+                                    mess = mess + ",\nAge Limit: 45+"
+                                mila = True
+                                final_message.append(mess)
+                                final_message.append("\n")
+                                response.append(ses)
+                                # Send Alert
+                        if mila:
+                            mess = "".join(final_message)
                             if email:
                                 sD.sendEmail(mess,emailid)
                             if sms:
                                 ss.send_message(mess,phone)
                             if alert:
                                 audio.play()
-                            response.append(ses)
-                            # Send Alert
-                    if mila:
-                        return response
-        else:
-            print("error")
-        time.sleep(5)
+                            return response
+            else:
+                print("error")
+            time.sleep(5)
 
 
 # App config.
@@ -104,7 +112,7 @@ def hello():
         name=request.form['name']
         phone=request.form['phone']
         email=request.form['email']
-        pincode = request.form['pincode']
+        pincodes = request.form['pincode'].split(",")
         covaxin = False
         covishield = False
         paid = False
@@ -112,6 +120,10 @@ def hello():
         smsAlert = False
         emailAlert = False
         soundAlert = False
+        age18 = False
+        age45 = False
+        dose1 = False
+        dose2 = False
 
         if "covaxin" in request.form:
             covaxin = True
@@ -126,7 +138,15 @@ def hello():
         if "emailAlert" in request.form:
             emailAlert = True
         if "soundAlert" in request.form:
-            soundAlert = True
+            soundAlert = True        
+        if "age18" in request.form:
+            age18 = True
+        if "age45" in request.form:
+            age45 = True        
+        if "dose1" in request.form:
+            dose1 = True
+        if "dose2" in request.form:
+            dose2 = True
 
         vaccineFilter = ""
         if covishield and not covaxin:
@@ -145,17 +165,22 @@ def hello():
         # print(name, " ", email, " ", phone,pincode, covaxin,covishield,paid,free,smsAlert,emailAlert,soundAlert)
         
         return_values = []
-        possible = getPossibility(pincode,date,vaccineFilter,feesFilter)
+        progress = True
+        for pincode in pincodes:
+            pincode = pincode.replace(" ","")
+            possible = getPossibility(pincode,date,vaccineFilter,feesFilter)
+            if not possible:
+                progress = False
         # print(possible,"##########")
-        if possible:
+        if progress:
 
             if not RUNNING:
-                p1 = Process(target=startSearch(return_values, phone,email,pincode,date,vaccineFilter,feesFilter,smsAlert,emailAlert,soundAlert))
+                p1 = Process(target=startSearch(return_values, phone,email,pincodes,date,vaccineFilter,feesFilter,smsAlert,emailAlert,soundAlert, dose1, dose2, age18, age45))
                 RUNNING = p1
                 # p1.start()
             else:
                 RUNNING.terminate()
-                p1 = Process(target=startSearch(return_values, phone,email,pincode,date,vaccineFilter,feesFilter,smsAlert,emailAlert,soundAlert))
+                p1 = Process(target=startSearch(return_values, phone,email,pincodes,date,vaccineFilter,feesFilter,smsAlert,emailAlert,soundAlert))
                 RUNNING = p1
                 # p1.start()
             result = str(return_values)

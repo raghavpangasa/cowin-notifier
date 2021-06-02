@@ -9,7 +9,7 @@ class Audio():
 
     def play(self):
         try:
-            playsound(".\\utils\\alert.mp3")
+            playsound(".\\alert.mp3")
         except Exception as e:
             print(e)
             pass

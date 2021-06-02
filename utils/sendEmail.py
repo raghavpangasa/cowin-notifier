@@ -1,14 +1,13 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from ..utils import config
 
 class SendEmail():
 
     def __init__(self):
         #The mail addresses and password
-        self.sender_address = config.YOUR_EMAIL_ID
-        self.sender_pass = config.YOUR_EMAIL_PASSWORD
+        self.sender_address = 'raghavdemo12@gmail.com'
+        self.sender_pass = 'Hello@123!'
         #Setup the MIME
         self.session = smtplib.SMTP('smtp.gmail.com', 587) #use gmail with port
         self.session.starttls() #enable security
