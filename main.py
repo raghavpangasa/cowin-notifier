@@ -1,3 +1,4 @@
+from flask.wrappers import Response
 import requests
 import json
 import time
@@ -11,6 +12,21 @@ from wtforms import Form, TextField, TextAreaField, validators, StringField, Sub
 from multiprocessing import Process
 import webbrowser
 import datetime
+import os, sys
+base_dir = '.'
+if hasattr(sys, '_MEIPASS'):
+    base_dir = os.path.join(sys._MEIPASS)
+
+
+# App config.
+DEBUG = False
+app = Flask(__name__, template_folder=os.path.join(base_dir, 'templates'))
+app.config.from_object(__name__)
+app.config['SECRET_KEY'] = '7d441f27d441f27567d441f2b6176a'
+RUNNING = False
+result = ""
+
+
 today = datetime.date.today()
 
 fD = FilterData()
@@ -70,9 +86,9 @@ def startSearch(response, phone,emailid,pincodes, date, vaccine, fees, sms=True,
                                 else:
                                     mess = mess + ",\nFees: Free" 
                                 if dose1 and not dose2:
-                                    mess = mess + ",\nDose: Dose 1"
+                                    mess = mess + ",\nDose: 1st Dose"
                                 if dose2 and not dose1:
-                                    mess = mess + ",\nDose: Dose 2"
+                                    mess = mess + ",\nDose: 2nd Dose"
                                 if age18 and not age45:
                                     mess = mess + ",\nAge Limit: 18-45"
                                 if age45 and not age18:
@@ -80,7 +96,8 @@ def startSearch(response, phone,emailid,pincodes, date, vaccine, fees, sms=True,
                                 mila = True
                                 final_message.append(mess)
                                 final_message.append("\n")
-                                response.append(ses)
+                                response.append(mess)
+                                response.append("<br/>")
                                 # Send Alert
                         if mila:
                             mess = "".join(final_message)
@@ -90,19 +107,12 @@ def startSearch(response, phone,emailid,pincodes, date, vaccine, fees, sms=True,
                                 ss.send_message(mess,phone)
                             if alert:
                                 audio.play()
-                            return response
+                            return mess
             else:
                 print("error")
-            time.sleep(5)
+            time.sleep(4)
 
 
-# App config.
-DEBUG = True
-app = Flask(__name__)
-app.config.from_object(__name__)
-app.config['SECRET_KEY'] = '7d441f27d441f27567d441f2b6176a'
-RUNNING = False
-result = ""
 
 @app.route("/", methods=['GET', 'POST'])
 def hello():
@@ -179,21 +189,24 @@ def hello():
                 RUNNING = p1
                 # p1.start()
             else:
-                RUNNING.terminate()
+                try:
+                    RUNNING.terminate()
+                except:
+                    pass
                 p1 = Process(target=startSearch(return_values, phone,email,pincodes,date,vaccineFilter,feesFilter,smsAlert,emailAlert,soundAlert))
                 RUNNING = p1
                 # p1.start()
-            result = str(return_values)
+            result = "Here are the available slots: <br><br><br>" +  "".join(return_values).replace('\n','<br>') + "<br><br><br>Re-enter the form to start again."
             # return render_template('hello.html', form=form, result = result)
 
         else:
-            result = "Please re-enter the details, no centres found for current application."
+            result = "Please re-enter the details, no centres found for current values."
             # return render_template('hello.html', form=form, result = result)
         try:
             RUNNING.join()
         except:
             pass
-    return render_template('hello.html')
+    return render_template('hello.html', response=result)
 
 def open_browser():
     url = 'http://localhost:8888/'
