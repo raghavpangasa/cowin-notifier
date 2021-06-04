@@ -1,6 +1,4 @@
-from pydub import AudioSegment
 from playsound import playsound
-import os
 
 class Audio():
     def __init__(self):

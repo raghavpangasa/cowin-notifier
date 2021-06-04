@@ -1,4 +1,3 @@
-from flask.wrappers import Response
 import requests
 import json
 import time
@@ -7,8 +6,7 @@ from utils.sendEmail import SendEmail
 from utils.sendSMS import SendSMS
 from utils.sendSMS import SendSMS
 from utils.alert import Audio
-from flask import Flask, render_template, flash, request
-from wtforms import Form, TextField, TextAreaField, validators, StringField, SubmitField
+from flask import Flask, render_template, request, g 
 from multiprocessing import Process
 import webbrowser
 import datetime
@@ -39,24 +37,29 @@ def getAppointMent(pincode, date):
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2172.95 Safari/537.36'}
     apiURL = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByPin?pincode=" + pincode + "&date=" + date
     response = requests.get(apiURL, headers=headers)
+    # print(response)
     # import pdb; pdb.set_trace()
     try:
         data = json.loads(response.content.decode())
+        # print(data)
     except:
-        print(response)
+        # print(response)
         data = ""
     return data
 
 
 def getPossibility(pincode, date, vaccine, fees):
-    data = getAppointMent(pincode, date)
-    if data:
-        for cent in data["centers"]:
-        # import pdb; pdb.set_trace()
-            if fD.paidFilter(cent, fees):
-                for ses in cent["sessions"]:
-                    if fD.vaccineFilter(ses,vaccine):
-                        return True
+    try:
+        data = getAppointMent(pincode, date)
+        if data:
+            for cent in data["centers"]:
+            # import pdb; pdb.set_trace()
+                if fD.paidFilter(cent, fees):
+                    for ses in cent["sessions"]:
+                        if fD.vaccineFilter(ses,vaccine):
+                            return True
+    except Exception as e:
+        print(data,e)
     return False
 
 
@@ -78,7 +81,7 @@ def startSearch(response, phone,emailid,pincodes, date, vaccine, fees, sms=True,
                         final_message = []
                         for ses in cent["sessions"]:
                             if fD.vaccineFilter(ses,vaccine) and fD.ifAvailable(ses, dose1,dose2) and fD.ageFilter(ses, age18,age45):
-                                print("Slot mil gaya! @" + cent["name"])
+                                print("Slot mil gaya! @ " + cent["name"])
                                 # time.sleep(10)
                                 mess = "\nCentre Name: " + str(cent["name"]) + ",\nAddress: " + str(cent["address"]) + ",\nDate: " + str(ses["date"]) + ",\nVaccine: " + str(ses["vaccine"])
                                 if cent["fee_type"] == "Paid":
@@ -112,7 +115,14 @@ def startSearch(response, phone,emailid,pincodes, date, vaccine, fees, sms=True,
                 print("error")
             time.sleep(4)
 
-
+@app.route("/stop", methods=['GET'])
+def stop():
+    global RUNNING
+    if RUNNING:
+        RUNNING.terminate()
+        print("Stopped")
+        RUNNING = False
+    return "True"
 
 @app.route("/", methods=['GET', 'POST'])
 def hello():
@@ -175,27 +185,35 @@ def hello():
         # print(name, " ", email, " ", phone,pincode, covaxin,covishield,paid,free,smsAlert,emailAlert,soundAlert)
         
         return_values = []
-        progress = True
+        inavailability = 0
+        unaivalable_pincodes = []
         for pincode in pincodes:
             pincode = pincode.replace(" ","")
             possible = getPossibility(pincode,date,vaccineFilter,feesFilter)
             if not possible:
-                progress = False
-        # print(possible,"##########")
-        if progress:
-
+                inavailability +=1
+                unaivalable_pincodes.append(pincode)
+        if inavailability > 0:
+            print("Centre for the filled details not found at: ", ",".join(unaivalable_pincodes))
+        if inavailability != len(pincodes):
+            pincodes = list(set(pincodes) - set(unaivalable_pincodes))
             if not RUNNING:
-                p1 = Process(target=startSearch(return_values, phone,email,pincodes,date,vaccineFilter,feesFilter,smsAlert,emailAlert,soundAlert, dose1, dose2, age18, age45))
+                print("First here")
+                p1 = Process(target=startSearch, args = (return_values, phone,email,pincodes,date,vaccineFilter,feesFilter,smsAlert,emailAlert,soundAlert, dose1, dose2, age18, age45,))
                 RUNNING = p1
-                # p1.start()
+                p1.start()
             else:
                 try:
-                    RUNNING.terminate()
+                    if RUNNING:
+                        RUNNING.terminate()
+                        print("Terminated")
                 except:
+                    print("Not able to terminate, restart application")
                     pass
-                p1 = Process(target=startSearch(return_values, phone,email,pincodes,date,vaccineFilter,feesFilter,smsAlert,emailAlert,soundAlert))
+                print("2nd here")
+                p1 = Process(target=startSearch, args = (return_values, phone,email,pincodes,date,vaccineFilter,feesFilter,smsAlert,emailAlert,soundAlert, dose1, dose2, age18, age45,))
                 RUNNING = p1
-                # p1.start()
+                p1.start()
             result = "Here are the available slots: <br><br><br>" +  "".join(return_values).replace('\n','<br>') + "<br><br><br>Re-enter the form to start again."
             # return render_template('hello.html', form=form, result = result)
 
@@ -206,6 +224,9 @@ def hello():
             RUNNING.join()
         except:
             pass
+    if not RUNNING:
+        result = ""
+    RUNNING = False
     return render_template('hello.html', response=result)
 
 def open_browser():

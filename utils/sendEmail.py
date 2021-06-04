@@ -27,7 +27,7 @@ class SendEmail():
             message = MIMEMultipart()
             message['From'] = self.sender_address
             message['To'] = receiver_address
-            message['Subject'] = 'COWIN Slot Availabilitsy Alert'   #The subject line
+            message['Subject'] = 'COWIN Slot Availability Alert'   #The subject line
             #The body and the attachments for the mail
             mail_content = "A slot is available at the following centre: \n" + str(centreName)
             message.attach(MIMEText(mail_content, 'plain'))

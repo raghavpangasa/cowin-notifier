@@ -1,5 +1,3 @@
-print("Imported Filters")
-
 class FilterData():
     def __init__(self):
         print("Class Imported")
